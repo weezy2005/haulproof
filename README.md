@@ -25,7 +25,7 @@ haulproof is built around those three ideas.
 
 | Module | What it does | Status |
 |---|---|---|
-| `haulproof.data` | Download, clean and validate NHTSA **FARS** (census of fatal crashes) and **CRSS** (weighted national sample of police-reported crashes), filtered to large trucks; join with FHWA vehicle-miles-traveled exposure data; load into DuckDB | 🚧 downloader in place |
+| `haulproof.data` | Download, clean and validate NHTSA **FARS** (census of fatal crashes) and **CRSS** (weighted national sample of police-reported crashes), filtered to large trucks; join with FHWA vehicle-miles-traveled exposure data; load into DuckDB | ✅ FARS/CRSS ingestion; 🚧 FHWA exposure join |
 | `haulproof.baseline` | Human-driver crash rates per 100M miles with confidence intervals, stratified by road type, lighting, weather, time of day; Poisson / negative-binomial rate models | ⏳ planned |
 | `haulproof.severity` | Multivariate models (logistic, ordinal, gradient boosting) predicting injury severity given a collision occurred | ⏳ planned |
 | `haulproof.abtest` | A/B evaluation of competing collision models: bootstrap CIs on metric deltas, McNemar's test, calibration analysis | ⏳ planned |
@@ -63,9 +63,14 @@ python -m venv .venv
 pip install -e ".[dev]"
 pytest
 
-# download one year of FARS + CRSS
-python -m haulproof.data.download --years 2022
+# download one year of FARS + CRSS, filter to large trucks, validate, load into DuckDB
+python -m haulproof.data.ingest --years 2022 --download
 ```
+
+This writes `data/processed/haulproof.duckdb` with four tables — `fars_crash`,
+`fars_vehicle`, `crss_crash`, `crss_vehicle` — holding crashes that involved at least
+one large truck and the large-truck vehicle records. Unknown / not-reported codes are
+stored as SQL `NULL`; CRSS tables keep the survey weight and design variables.
 
 ## Methodology
 
@@ -75,7 +80,7 @@ assumptions, and known limitations.
 ## Roadmap
 
 - [x] Project scaffold, CI, readiness statistics core
-- [ ] FARS/CRSS ingestion + data-quality validation (Pandera)
+- [x] FARS/CRSS ingestion + data-quality validation (Pandera)
 - [ ] DuckDB warehouse + SQL views for truck-involved crashes
 - [ ] FHWA exposure join → stratified baseline rates
 - [ ] Severity models + A/B evaluation harness

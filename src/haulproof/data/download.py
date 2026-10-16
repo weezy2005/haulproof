@@ -12,6 +12,11 @@ import zipfile
 from pathlib import Path
 
 import requests
+import truststore
+
+# Verify TLS against the OS certificate store rather than certifi's bundle, so downloads
+# work behind corporate proxies and antivirus TLS scanners that install their own root CA.
+truststore.inject_into_ssl()
 
 RAW_DIR = Path(__file__).resolve().parents[3] / "data" / "raw"
 
